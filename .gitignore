@@ -1,0 +1,57 @@
+# Unreal Engine files
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+*.VC.db
+*.opensdf
+*.opendb
+*.sdf
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Ignore specific large file types that shouldn't be in source control
+*.uasset
+*.umap
+*.pak
+*.upk
+
+# Keep source code and configuration files
+!*.h
+!*.cpp
+!*.cs
+!*.ini
+!*.uproject
+!*.md
+!Content/Collections/
+!Content/Developers/
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.cache
+
+# Build artifacts
+Build/
+
+# Don't ignore specific important assets (if any)
+# !Content/SomeImportantAsset.uasset
