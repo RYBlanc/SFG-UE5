@@ -15,6 +15,7 @@
 #include "LevelDesignManager.h"
 #include "CharacterManager.h"
 #include "GameProgressionManager.h"
+#include "AudioSystemManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -277,6 +278,28 @@ void AGemini_CGameMode::InitializeProjectVisible()
 	{
 		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Game Progression Manager"));
 	}
+	
+	// Initialize Audio System Manager
+	if (UAudioSystemManager* AudioManager = GetAudioSystemManager())
+	{
+		AudioManager->InitializeAudioSystem();
+		
+		// Register for audio events
+		AudioManager->OnMusicTrackChanged.AddDynamic(this, &AGemini_CGameMode::OnMusicTrackChanged);
+		AudioManager->OnAudioMoodChanged.AddDynamic(this, &AGemini_CGameMode::OnAudioMoodChanged);
+		AudioManager->OnSoundEffectTriggered.AddDynamic(this, &AGemini_CGameMode::OnSoundEffectTriggered);
+		
+		// Set initial audio mood and location
+		AudioManager->SetAudioMood(EAudioMood::Contemplative);
+		AudioManager->OnLocationChanged(EStoryLocation::Tokyo);
+		
+		UE_LOG(LogProjectVisible, Log, TEXT("Audio System Manager initialized - Adaptive music: %s"), 
+			   AudioManager->IsAdaptiveMusicEnabled() ? TEXT("Enabled") : TEXT("Disabled"));
+	}
+	else
+	{
+		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Audio System Manager"));
+	}
 
 	UE_LOG(LogProjectVisible, Log, TEXT("Project Visible systems initialized - All systems operational"));
 }
@@ -464,6 +487,18 @@ UGameProgressionManager* AGemini_CGameMode::GetGameProgressionManager() const
 		if (UGameInstance* GameInstance = World->GetGameInstance())
 		{
 			return GameInstance->GetSubsystem<UGameProgressionManager>();
+		}
+	}
+	return nullptr;
+}
+
+UAudioSystemManager* AGemini_CGameMode::GetAudioSystemManager() const
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			return GameInstance->GetSubsystem<UAudioSystemManager>();
 		}
 	}
 	return nullptr;
@@ -1148,6 +1183,115 @@ void AGemini_CGameMode::OnProgressUpdated(EProgressTrackingType Type, float NewP
 			FString::Printf(TEXT("%s_%.1f"), *UEnum::GetValueAsString(Type), NewProgress),
 			NewProgress / 100.0f
 		);
+	}
+}
+
+void AGemini_CGameMode::OnMusicTrackChanged(const FMusicTrack& NewTrack, const FMusicTrack& OldTrack)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Music track changed: %s -> %s (Mood: %s)"), 
+		   *OldTrack.TrackName, *NewTrack.TrackName, *UEnum::GetValueAsString(NewTrack.PrimaryMood));
+	
+	// Update boundary dissolution based on music mood
+	if (NewTrack.PrimaryMood == EAudioMood::Ethereal || NewTrack.PrimaryMood == EAudioMood::Mysterious)
+	{
+		TriggerBoundaryDissolution(0.2f);
+	}
+	
+	// Record in social experiment
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("Music Track Changed"),
+			FString::Printf(TEXT("%s->%s"), *OldTrack.TrackName, *NewTrack.TrackName),
+			1.0f
+		);
+	}
+}
+
+void AGemini_CGameMode::OnAudioMoodChanged(EAudioMood OldMood, EAudioMood NewMood)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Audio mood changed: %s -> %s"), 
+		   *UEnum::GetValueAsString(OldMood), *UEnum::GetValueAsString(NewMood));
+	
+	// Adjust game atmosphere based on mood
+	if (UBoundaryDissolutionManager* BoundaryManager = GetBoundaryDissolutionManager())
+	{
+		switch (NewMood)
+		{
+			case EAudioMood::Ethereal:
+				BoundaryManager->SetDissolutionIntensity(0.4f);
+				break;
+			case EAudioMood::Mysterious:
+				BoundaryManager->SetDissolutionIntensity(0.3f);
+				break;
+			case EAudioMood::Chaotic:
+				BoundaryManager->SetDissolutionIntensity(0.5f);
+				break;
+			case EAudioMood::Calm:
+			case EAudioMood::Contemplative:
+				BoundaryManager->SetDissolutionIntensity(0.1f);
+				break;
+		}
+	}
+	
+	// Update UI theme based on mood
+	if (UProjectVisibleUIManager* UIManager = GetUIManager())
+	{
+		UIManager->UpdateInvestigationDisplayData();
+	}
+	
+	// Record mood analytics
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("Audio Mood Changed"),
+			FString::Printf(TEXT("%s->%s"), *UEnum::GetValueAsString(OldMood), *UEnum::GetValueAsString(NewMood)),
+			1.0f
+		);
+	}
+}
+
+void AGemini_CGameMode::OnSoundEffectTriggered(const FSoundEffect& Effect)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Sound effect triggered: %s (Category: %s)"), 
+		   *Effect.EffectName, *UEnum::GetValueAsString(Effect.Category));
+	
+	// Special handling for certain effect types
+	switch (Effect.Category)
+	{
+		case ESoundEffectCategory::UI:
+			// UI feedback - could trigger haptic feedback on controllers
+			break;
+		case ESoundEffectCategory::Interaction:
+			// Interaction feedback - record player engagement
+			if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+			{
+				ExperimentManager->RecordBehavioralData(
+					1, // Default experiment ID
+					TEXT("CURRENT_PLAYER"),
+					TEXT("Interaction Sound"),
+					Effect.EffectName,
+					1.0f
+				);
+			}
+			break;
+		case ESoundEffectCategory::Atmospheric:
+			// Atmospheric effects - enhance immersion
+			if (UMemoryManager* MemoryManager = GetMemoryManager())
+			{
+				MemoryManager->CreateMemory(
+					FString::Printf(TEXT("音響体験: %s"), *Effect.EffectName),
+					TEXT("印象的な音響効果を体験した"),
+					EMemoryType::Procedural,
+					EMemoryImportance::Low,
+					25.0f
+				);
+			}
+			break;
 	}
 }
 
