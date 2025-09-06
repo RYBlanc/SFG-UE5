@@ -12,6 +12,7 @@
 #include "SocialExperimentManager.h"
 #include "ProjectVisibleUIManager.h"
 #include "StoryManager.h"
+#include "LevelDesignManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -211,6 +212,26 @@ void AGemini_CGameMode::InitializeProjectVisible()
 	{
 		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Story Manager"));
 	}
+	
+	// Initialize Level Design Manager
+	if (ULevelDesignManager* LevelManager = GetLevelDesignManager())
+	{
+		LevelManager->InitializeLevelSystem();
+		
+		// Load the initial level (Tokyo Main)
+		LevelManager->LoadLevel(TEXT("TOKYO_MAIN"));
+		
+		// Register for level events
+		LevelManager->OnLevelLoaded.AddDynamic(this, &AGemini_CGameMode::OnLevelLoaded);
+		LevelManager->OnLevelCompleted.AddDynamic(this, &AGemini_CGameMode::OnLevelCompleted);
+		LevelManager->OnLevelTransition.AddDynamic(this, &AGemini_CGameMode::OnLevelTransition);
+		
+		UE_LOG(LogProjectVisible, Log, TEXT("Level Design Manager initialized - Loaded Tokyo Main"));
+	}
+	else
+	{
+		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Level Design Manager"));
+	}
 
 	UE_LOG(LogProjectVisible, Log, TEXT("Project Visible systems initialized - All systems operational"));
 }
@@ -362,6 +383,18 @@ UStoryManager* AGemini_CGameMode::GetStoryManager() const
 		if (UGameInstance* GameInstance = World->GetGameInstance())
 		{
 			return GameInstance->GetSubsystem<UStoryManager>();
+		}
+	}
+	return nullptr;
+}
+
+ULevelDesignManager* AGemini_CGameMode::GetLevelDesignManager() const
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			return GameInstance->GetSubsystem<ULevelDesignManager>();
 		}
 	}
 	return nullptr;
@@ -628,6 +661,136 @@ void AGemini_CGameMode::OnStoryChapterCompleted(const FStoryChapter& Chapter)
 	if (OverallProgress > 0.5f)
 	{
 		TriggerBoundaryDissolution(OverallProgress * 0.3f);
+	}
+}
+
+void AGemini_CGameMode::OnLevelLoaded(const FLevelDefinition& Level)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Level loaded: %s (%s)"), *Level.LevelName, *Level.LevelID);
+	
+	// Update UI to show current level
+	if (UProjectVisibleUIManager* UIManager = GetUIManager())
+	{
+		UIManager->UpdateInvestigationDisplayData();
+	}
+	
+	// Apply level-specific settings
+	if (Level.LevelType == ELevelType::DreamLandscape)
+	{
+		// Switch to dream mode if not already
+		if (!bIsInDreamMode)
+		{
+			SwitchToDreamMode();
+		}
+	}
+	else
+	{
+		// Switch to reality mode if in dream
+		if (bIsInDreamMode)
+		{
+			SwitchToRealityMode();
+		}
+	}
+	
+	// Record level start in analytics
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("Level Started"),
+			Level.LevelID,
+			1.0f
+		);
+	}
+}
+
+void AGemini_CGameMode::OnLevelCompleted(const FLevelDefinition& Level)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Level completed: %s (%.1f%% completion)"), 
+		   *Level.LevelName, Level.CompletionPercentage);
+	
+	// Unlock next levels based on story progression
+	if (ULevelDesignManager* LevelManager = GetLevelDesignManager())
+	{
+		// Update levels for current story phase
+		if (UStoryManager* StoryManager = GetStoryManager())
+		{
+			LevelManager->UpdateLevelsForStoryPhase(StoryManager->GetCurrentPhase());
+		}
+	}
+	
+	// Award virtue points for level completion
+	if (UVirtueManager* VirtueManager = GetVirtueManager())
+	{
+		VirtueManager->RecordWisdomAction(TEXT("Level Completion"), true, 4.0f);
+		VirtueManager->RecordCourageAction(TEXT("Exploration Complete"), true, 3.0f);
+	}
+	
+	// Create significant memory
+	if (UMemoryManager* MemoryManager = GetMemoryManager())
+	{
+		MemoryManager->CreateMemory(
+			FString::Printf(TEXT("Completed: %s"), *Level.LevelName),
+			FString::Printf(TEXT("Successfully completed level: %s"), *Level.Description),
+			EMemoryType::Episodic,
+			EMemoryImportance::High,
+			85.0f
+		);
+	}
+	
+	// Record completion analytics
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("Level Completed"),
+			Level.LevelID,
+			Level.CompletionPercentage / 100.0f
+		);
+	}
+}
+
+void AGemini_CGameMode::OnLevelTransition(const FString& FromLevel, const FString& ToLevel)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Level transition: %s -> %s"), *FromLevel, *ToLevel);
+	
+	// Update UI for transition
+	if (UProjectVisibleUIManager* UIManager = GetUIManager())
+	{
+		UIManager->PushScreen(EProjectVisibleScreenType::Loading);
+		// TODO: Show loading screen with transition animation
+	}
+	
+	// Apply boundary dissolution effects during transition
+	if (ULevelDesignManager* LevelManager = GetLevelDesignManager())
+	{
+		FLevelDefinition ToLevelDef;
+		if (LevelManager->GetLevelDefinition(ToLevel, ToLevelDef))
+		{
+			// Increase boundary dissolution for chapter transitions
+			if (ToLevelDef.LevelType == ELevelType::BoundaryTransition)
+			{
+				TriggerBoundaryDissolution(0.8f);
+			}
+			else if (ToLevelDef.LevelType == ELevelType::DreamLandscape)
+			{
+				TriggerBoundaryDissolution(0.4f);
+			}
+		}
+	}
+	
+	// Record transition in experiments
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("Level Transition"),
+			FString::Printf(TEXT("%s_to_%s"), *FromLevel, *ToLevel),
+			1.0f
+		);
 	}
 }
 
