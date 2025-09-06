@@ -11,6 +11,7 @@
 #include "BoundaryDissolutionManager.h"
 #include "SocialExperimentManager.h"
 #include "ProjectVisibleUIManager.h"
+#include "StoryManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -191,6 +192,25 @@ void AGemini_CGameMode::InitializeProjectVisible()
 	{
 		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get UI Manager"));
 	}
+	
+	// Initialize Story Manager
+	if (UStoryManager* StoryManager = GetStoryManager())
+	{
+		StoryManager->InitializeStorySystem();
+		
+		// Start the story from the introduction
+		StoryManager->StartChapter(1);
+		
+		// Register for story events
+		StoryManager->OnPhaseChanged.AddDynamic(this, &AGemini_CGameMode::OnStoryPhaseChanged);
+		StoryManager->OnChapterCompleted.AddDynamic(this, &AGemini_CGameMode::OnStoryChapterCompleted);
+		
+		UE_LOG(LogProjectVisible, Log, TEXT("Story Manager initialized - Starting Chapter 1"));
+	}
+	else
+	{
+		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Story Manager"));
+	}
 
 	UE_LOG(LogProjectVisible, Log, TEXT("Project Visible systems initialized - All systems operational"));
 }
@@ -330,6 +350,18 @@ UProjectVisibleUIManager* AGemini_CGameMode::GetUIManager() const
 		if (UGameInstance* GameInstance = World->GetGameInstance())
 		{
 			return GameInstance->GetSubsystem<UProjectVisibleUIManager>();
+		}
+	}
+	return nullptr;
+}
+
+UStoryManager* AGemini_CGameMode::GetStoryManager() const
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			return GameInstance->GetSubsystem<UStoryManager>();
 		}
 	}
 	return nullptr;
@@ -506,6 +538,96 @@ void AGemini_CGameMode::OnPlayerBehaviorObserved(const FString& BehaviorType, co
 				);
 			}
 		}
+	}
+}
+
+void AGemini_CGameMode::OnStoryPhaseChanged(EStoryPhase NewPhase)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Story phase changed to: %s"), *UEnum::GetValueAsString(NewPhase));
+	
+	// Update game mode based on story phase
+	switch (NewPhase)
+	{
+		case EStoryPhase::Chapter1:
+		case EStoryPhase::Chapter2:
+		case EStoryPhase::Chapter3:
+		case EStoryPhase::Chapter4:
+			// Reality-focused chapters
+			if (bIsInDreamMode)
+			{
+				SwitchToRealityMode();
+			}
+			break;
+		case EStoryPhase::Chapter5:
+			// Boundary dissolution chapter
+			TriggerBoundaryDissolution(0.8f);
+			break;
+		case EStoryPhase::Epilogue:
+		case EStoryPhase::Completed:
+			// Final phase
+			TriggerBoundaryDissolution(1.0f);
+			break;
+		default:
+			break;
+	}
+	
+	// Update UI based on story phase
+	if (UProjectVisibleUIManager* UIManager = GetUIManager())
+	{
+		if (NewPhase == EStoryPhase::Completed)
+		{
+			UIManager->PushScreen(EProjectVisibleScreenType::GameOver);
+		}
+	}
+}
+
+void AGemini_CGameMode::OnStoryChapterCompleted(const FStoryChapter& Chapter)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Chapter completed: %s (%.1f%% completion)"), 
+		   *Chapter.ChapterTitle, Chapter.CompletionPercentage);
+	
+	// Award virtue points for chapter completion
+	if (UVirtueManager* VirtueManager = GetVirtueManager())
+	{
+		VirtueManager->RecordWisdomAction(TEXT("Chapter Completion"), true, 5.0f);
+		VirtueManager->RecordCourageAction(TEXT("Story Progress"), true, 3.0f);
+	}
+	
+	// Create a significant memory of chapter completion
+	if (UMemoryManager* MemoryManager = GetMemoryManager())
+	{
+		MemoryManager->CreateMemory(
+			FString::Printf(TEXT("Chapter: %s"), *Chapter.ChapterTitle),
+			FString::Printf(TEXT("Completed chapter: %s"), *Chapter.ChapterDescription),
+			EMemoryType::Episodic,
+			EMemoryImportance::High,
+			80.0f
+		);
+	}
+	
+	// Record in social experiment
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("Chapter Completion"),
+			Chapter.ChapterTitle,
+			Chapter.PlayTimeMinutes
+		);
+	}
+	
+	// Trigger boundary dissolution based on progress
+	float OverallProgress = 0.0f;
+	if (UStoryManager* StoryManager = GetStoryManager())
+	{
+		OverallProgress = StoryManager->GetOverallProgress() / 100.0f;
+	}
+	
+	// Gradual boundary dissolution as story progresses
+	if (OverallProgress > 0.5f)
+	{
+		TriggerBoundaryDissolution(OverallProgress * 0.3f);
 	}
 }
 

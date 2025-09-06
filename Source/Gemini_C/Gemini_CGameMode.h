@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "LandscapeOfMindTypes.h"
+#include "StorySystemTypes.h"
 #include "Gemini_CGameMode.generated.h"
 
 class ULandscapeOfMindManager;
@@ -15,6 +16,7 @@ class UVirtueManager;
 class UMemoryManager;
 class URealityInvestigationManager;
 class UProjectVisibleUIManager;
+class UStoryManager;
 
 /**
  * Project Visible Game Mode - Manages the dual reality/dream world system
@@ -69,6 +71,9 @@ public:
 	UProjectVisibleUIManager* GetUIManager() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	UStoryManager* GetStoryManager() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
 	ELandscapePhase GetCurrentGamePhase() const { return CurrentGamePhase; }
 
 	// Game Events
@@ -95,6 +100,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Project Visible")
 	void OnPlayerBehaviorObserved(const FString& BehaviorType, const FString& Response, float Intensity);
+
+	UFUNCTION()
+	void OnStoryPhaseChanged(EStoryPhase NewPhase);
+
+	UFUNCTION()
+	void OnStoryChapterCompleted(const FStoryChapter& Chapter);
 
 protected:
 	// Game State
