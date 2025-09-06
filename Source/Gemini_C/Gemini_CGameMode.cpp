@@ -13,6 +13,7 @@
 #include "ProjectVisibleUIManager.h"
 #include "StoryManager.h"
 #include "LevelDesignManager.h"
+#include "CharacterManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -232,6 +233,26 @@ void AGemini_CGameMode::InitializeProjectVisible()
 	{
 		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Level Design Manager"));
 	}
+	
+	// Initialize Character Manager
+	if (UCharacterManager* CharacterManager = GetCharacterManager())
+	{
+		CharacterManager->InitializeCharacterSystem();
+		
+		// Register for character events
+		CharacterManager->OnCharacterRegistered.AddDynamic(this, &AGemini_CGameMode::OnCharacterRegistered);
+		CharacterManager->OnDialogueStarted.AddDynamic(this, &AGemini_CGameMode::OnDialogueStarted);
+		CharacterManager->OnDialogueEnded.AddDynamic(this, &AGemini_CGameMode::OnDialogueEnded);
+		CharacterManager->OnTrustChanged.AddDynamic(this, &AGemini_CGameMode::OnCharacterTrustChanged);
+		CharacterManager->OnInformationRevealed.AddDynamic(this, &AGemini_CGameMode::OnInformationRevealed);
+		
+		UE_LOG(LogProjectVisible, Log, TEXT("Character Manager initialized - %d characters registered"), 
+			   CharacterManager->GetAllCharacters().Num());
+	}
+	else
+	{
+		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Character Manager"));
+	}
 
 	UE_LOG(LogProjectVisible, Log, TEXT("Project Visible systems initialized - All systems operational"));
 }
@@ -395,6 +416,18 @@ ULevelDesignManager* AGemini_CGameMode::GetLevelDesignManager() const
 		if (UGameInstance* GameInstance = World->GetGameInstance())
 		{
 			return GameInstance->GetSubsystem<ULevelDesignManager>();
+		}
+	}
+	return nullptr;
+}
+
+UCharacterManager* AGemini_CGameMode::GetCharacterManager() const
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			return GameInstance->GetSubsystem<UCharacterManager>();
 		}
 	}
 	return nullptr;
@@ -789,6 +822,136 @@ void AGemini_CGameMode::OnLevelTransition(const FString& FromLevel, const FStrin
 			TEXT("CURRENT_PLAYER"),
 			TEXT("Level Transition"),
 			FString::Printf(TEXT("%s_to_%s"), *FromLevel, *ToLevel),
+			1.0f
+		);
+	}
+}
+
+void AGemini_CGameMode::OnCharacterRegistered(const FCharacterDefinition& Character)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Character registered: %s (%s) - Class: %s"), 
+		   *Character.CharacterName, *Character.CharacterID, *UEnum::GetValueAsString(Character.SocialClass));
+	
+	// Update UI to reflect new character availability
+	if (UProjectVisibleUIManager* UIManager = GetUIManager())
+	{
+		UIManager->UpdateInvestigationDisplayData();
+	}
+}
+
+void AGemini_CGameMode::OnDialogueStarted(const FString& CharacterID, const FDialogueSession& Session)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Dialogue started with character %s (Session: %s)"), 
+		   *CharacterID, *Session.SessionID);
+	
+	// Switch UI to dialogue mode
+	if (UProjectVisibleUIManager* UIManager = GetUIManager())
+	{
+		UIManager->PushScreen(EProjectVisibleScreenType::Investigation);
+	}
+	
+	// Record dialogue start in social experiment
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			Session.PlayerID,
+			TEXT("Dialogue Started"),
+			CharacterID,
+			1.0f
+		);
+	}
+}
+
+void AGemini_CGameMode::OnDialogueEnded(const FString& CharacterID, const FCharacterInteractionResult& Result)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Dialogue ended with %s - Success: %s, Info gained: %.1f"), 
+		   *CharacterID, Result.bWasSuccessful ? TEXT("Yes") : TEXT("No"), Result.InformationValue);
+	
+	// Award virtue points based on dialogue approach
+	if (UVirtueManager* VirtueManager = GetVirtueManager())
+	{
+		switch (Result.Approach)
+		{
+			case EDialogueApproach::Empathy:
+				VirtueManager->RecordJusticeAction(TEXT("Empathetic Dialogue"), Result.bWasSuccessful, 2.0f);
+				break;
+			case EDialogueApproach::Logic:
+				VirtueManager->RecordWisdomAction(TEXT("Logical Dialogue"), Result.bWasSuccessful, 2.0f);
+				break;
+			case EDialogueApproach::Intimidation:
+				// Negative virtue impact for intimidation
+				VirtueManager->RecordJusticeAction(TEXT("Intimidating Dialogue"), false, -1.0f);
+				break;
+			default:
+				VirtueManager->RecordWisdomAction(TEXT("General Dialogue"), Result.bWasSuccessful, 1.0f);
+				break;
+		}
+	}
+	
+	// Create memory of significant dialogue
+	if (UMemoryManager* MemoryManager = GetMemoryManager())
+	{
+		if (Result.InformationValue > 30.0f)
+		{
+			MemoryManager->CreateMemory(
+				FString::Printf(TEXT("重要な対話: %s"), *CharacterID),
+				FString::Printf(TEXT("対話で重要な情報を得た: %.1f"), Result.InformationValue),
+				EMemoryType::Episodic,
+				EMemoryImportance::High,
+				Result.InformationValue
+			);
+		}
+	}
+}
+
+void AGemini_CGameMode::OnCharacterTrustChanged(const FString& CharacterID, float NewTrustLevel)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Character %s trust changed to %.1f"), *CharacterID, NewTrustLevel);
+	
+	// Trigger boundary dissolution effects based on trust levels
+	if (NewTrustLevel > 80.0f)
+	{
+		// High trust can lead to boundary dissolution
+		TriggerBoundaryDissolution(0.2f);
+	}
+	else if (NewTrustLevel < 20.0f)
+	{
+		// Very low trust can also cause reality distortion
+		TriggerBoundaryDissolution(0.1f);
+	}
+}
+
+void AGemini_CGameMode::OnInformationRevealed(const FString& CharacterID, const FString& Information)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Information revealed by %s: %s"), *CharacterID, *Information);
+	
+	// Add to story system
+	if (UStoryManager* StoryManager = GetStoryManager())
+	{
+		StoryManager->AddClueToCase(TEXT("MAIN_INVESTIGATION"), Information);
+	}
+	
+	// Create important memory
+	if (UMemoryManager* MemoryManager = GetMemoryManager())
+	{
+		MemoryManager->CreateMemory(
+			FString::Printf(TEXT("情報入手: %s"), *CharacterID),
+			Information,
+			EMemoryType::Semantic,
+			EMemoryImportance::High,
+			80.0f
+		);
+	}
+	
+	// Record in social experiment
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("Information Revealed"),
+			Information,
 			1.0f
 		);
 	}

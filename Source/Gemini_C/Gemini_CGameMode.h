@@ -8,6 +8,7 @@
 #include "LandscapeOfMindTypes.h"
 #include "StorySystemTypes.h"
 #include "LevelDesignTypes.h"
+#include "CharacterSystemTypes.h"
 #include "Gemini_CGameMode.generated.h"
 
 class ULandscapeOfMindManager;
@@ -19,6 +20,7 @@ class URealityInvestigationManager;
 class UProjectVisibleUIManager;
 class UStoryManager;
 class ULevelDesignManager;
+class UCharacterManager;
 
 /**
  * Project Visible Game Mode - Manages the dual reality/dream world system
@@ -79,6 +81,9 @@ public:
 	ULevelDesignManager* GetLevelDesignManager() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	UCharacterManager* GetCharacterManager() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
 	ELandscapePhase GetCurrentGamePhase() const { return CurrentGamePhase; }
 
 	// Game Events
@@ -120,6 +125,21 @@ public:
 
 	UFUNCTION()
 	void OnLevelTransition(const FString& FromLevel, const FString& ToLevel);
+
+	UFUNCTION()
+	void OnCharacterRegistered(const FCharacterDefinition& Character);
+
+	UFUNCTION()
+	void OnDialogueStarted(const FString& CharacterID, const FDialogueSession& Session);
+
+	UFUNCTION()
+	void OnDialogueEnded(const FString& CharacterID, const FCharacterInteractionResult& Result);
+
+	UFUNCTION()
+	void OnCharacterTrustChanged(const FString& CharacterID, float NewTrustLevel);
+
+	UFUNCTION()
+	void OnInformationRevealed(const FString& CharacterID, const FString& Information);
 
 protected:
 	// Game State
