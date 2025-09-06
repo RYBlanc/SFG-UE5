@@ -9,6 +9,7 @@
 #include "StorySystemTypes.h"
 #include "LevelDesignTypes.h"
 #include "CharacterSystemTypes.h"
+#include "GameProgressionTypes.h"
 #include "Gemini_CGameMode.generated.h"
 
 class ULandscapeOfMindManager;
@@ -21,6 +22,7 @@ class UProjectVisibleUIManager;
 class UStoryManager;
 class ULevelDesignManager;
 class UCharacterManager;
+class UGameProgressionManager;
 
 /**
  * Project Visible Game Mode - Manages the dual reality/dream world system
@@ -84,6 +86,9 @@ public:
 	UCharacterManager* GetCharacterManager() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	UGameProgressionManager* GetGameProgressionManager() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
 	ELandscapePhase GetCurrentGamePhase() const { return CurrentGamePhase; }
 
 	// Game Events
@@ -140,6 +145,21 @@ public:
 
 	UFUNCTION()
 	void OnInformationRevealed(const FString& CharacterID, const FString& Information);
+
+	UFUNCTION()
+	void OnGameSaved(const FGameSaveData& SaveData);
+
+	UFUNCTION()
+	void OnGameLoaded(const FGameSaveData& LoadedData);
+
+	UFUNCTION()
+	void OnCheckpointReached(const FGameCheckpoint& Checkpoint);
+
+	UFUNCTION()
+	void OnAchievementUnlocked(const FAchievementDefinition& Achievement);
+
+	UFUNCTION()
+	void OnProgressUpdated(EProgressTrackingType Type, float NewProgress);
 
 protected:
 	// Game State

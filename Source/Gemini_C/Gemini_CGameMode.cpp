@@ -14,6 +14,7 @@
 #include "StoryManager.h"
 #include "LevelDesignManager.h"
 #include "CharacterManager.h"
+#include "GameProgressionManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -253,6 +254,29 @@ void AGemini_CGameMode::InitializeProjectVisible()
 	{
 		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Character Manager"));
 	}
+	
+	// Initialize Game Progression Manager
+	if (UGameProgressionManager* ProgressionManager = GetGameProgressionManager())
+	{
+		ProgressionManager->InitializeProgressionSystem();
+		
+		// Start new game session
+		ProgressionManager->StartNewSession();
+		
+		// Register for progression events
+		ProgressionManager->OnGameSaved.AddDynamic(this, &AGemini_CGameMode::OnGameSaved);
+		ProgressionManager->OnGameLoaded.AddDynamic(this, &AGemini_CGameMode::OnGameLoaded);
+		ProgressionManager->OnCheckpointReached.AddDynamic(this, &AGemini_CGameMode::OnCheckpointReached);
+		ProgressionManager->OnAchievementUnlocked.AddDynamic(this, &AGemini_CGameMode::OnAchievementUnlocked);
+		ProgressionManager->OnProgressUpdated.AddDynamic(this, &AGemini_CGameMode::OnProgressUpdated);
+		
+		UE_LOG(LogProjectVisible, Log, TEXT("Game Progression Manager initialized - Auto-save: %s"), 
+			   ProgressionManager->IsAutoSaveEnabled() ? TEXT("Enabled") : TEXT("Disabled"));
+	}
+	else
+	{
+		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Game Progression Manager"));
+	}
 
 	UE_LOG(LogProjectVisible, Log, TEXT("Project Visible systems initialized - All systems operational"));
 }
@@ -428,6 +452,18 @@ UCharacterManager* AGemini_CGameMode::GetCharacterManager() const
 		if (UGameInstance* GameInstance = World->GetGameInstance())
 		{
 			return GameInstance->GetSubsystem<UCharacterManager>();
+		}
+	}
+	return nullptr;
+}
+
+UGameProgressionManager* AGemini_CGameMode::GetGameProgressionManager() const
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			return GameInstance->GetSubsystem<UGameProgressionManager>();
 		}
 	}
 	return nullptr;
@@ -953,6 +989,164 @@ void AGemini_CGameMode::OnInformationRevealed(const FString& CharacterID, const 
 			TEXT("Information Revealed"),
 			Information,
 			1.0f
+		);
+	}
+}
+
+void AGemini_CGameMode::OnGameSaved(const FGameSaveData& SaveData)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Game saved: %s (%.1f%% complete)"), 
+		   *SaveData.SaveName, SaveData.OverallProgress);
+	
+	// Update UI to show save confirmation
+	if (UProjectVisibleUIManager* UIManager = GetUIManager())
+	{
+		UIManager->UpdateInvestigationDisplayData();
+	}
+	
+	// Record in social experiment
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("Game Saved"),
+			SaveData.SaveType == ESaveDataType::ManualSave ? TEXT("Manual") : TEXT("Auto"),
+			1.0f
+		);
+	}
+}
+
+void AGemini_CGameMode::OnGameLoaded(const FGameSaveData& LoadedData)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Game loaded: %s (Play time: %.1f minutes)"), 
+		   *LoadedData.SaveName, LoadedData.PlayTime / 60.0f);
+	
+	// Update game state based on loaded data
+	if (LoadedData.Difficulty != EGameDifficulty::Normal)
+	{
+		// Apply difficulty settings if different from default
+		UE_LOG(LogProjectVisible, Log, TEXT("Applied difficulty: %s"), *UEnum::GetValueAsString(LoadedData.Difficulty));
+	}
+	
+	// Update UI with loaded state
+	if (UProjectVisibleUIManager* UIManager = GetUIManager())
+	{
+		UIManager->UpdateInvestigationDisplayData();
+	}
+}
+
+void AGemini_CGameMode::OnCheckpointReached(const FGameCheckpoint& Checkpoint)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Checkpoint reached: %s (%.1f%% progress)"), 
+		   *Checkpoint.CheckpointName, Checkpoint.ProgressPercentage);
+	
+	// Award virtue points for reaching checkpoints
+	if (UVirtueManager* VirtueManager = GetVirtueManager())
+	{
+		VirtueManager->RecordWisdomAction(TEXT("Checkpoint Reached"), true, 1.0f);
+	}
+	
+	// Create memory of checkpoint
+	if (UMemoryManager* MemoryManager = GetMemoryManager())
+	{
+		MemoryManager->CreateMemory(
+			FString::Printf(TEXT("チェックポイント: %s"), *Checkpoint.CheckpointName),
+			Checkpoint.Description.IsEmpty() ? TEXT("重要な進歩を遂げた") : Checkpoint.Description,
+			EMemoryType::Episodic,
+			EMemoryImportance::Medium,
+			50.0f
+		);
+	}
+	
+	// Trigger boundary dissolution based on progress
+	if (Checkpoint.ProgressPercentage > 75.0f)
+	{
+		TriggerBoundaryDissolution(0.3f);
+	}
+}
+
+void AGemini_CGameMode::OnAchievementUnlocked(const FAchievementDefinition& Achievement)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Achievement unlocked: %s (+%d points)"), 
+		   *Achievement.AchievementName, Achievement.RewardPoints);
+	
+	// Award virtue points for achievements
+	if (UVirtueManager* VirtueManager = GetVirtueManager())
+	{
+		switch (Achievement.Type)
+		{
+			case EAchievementType::VirtueSeeker:
+				VirtueManager->RecordJusticeAction(TEXT("Virtue Achievement"), true, 3.0f);
+				break;
+			case EAchievementType::TruthSeeker:
+				VirtueManager->RecordWisdomAction(TEXT("Truth Achievement"), true, 3.0f);
+				break;
+			case EAchievementType::ExplorationMaster:
+				VirtueManager->RecordCourageAction(TEXT("Exploration Achievement"), true, 3.0f);
+				break;
+			case EAchievementType::DialogueExpert:
+				VirtueManager->RecordTemperanceAction(TEXT("Dialogue Achievement"), true, 3.0f);
+				break;
+			default:
+				VirtueManager->RecordWisdomAction(TEXT("General Achievement"), true, 2.0f);
+				break;
+		}
+	}
+	
+	// Create important memory of achievement
+	if (UMemoryManager* MemoryManager = GetMemoryManager())
+	{
+		MemoryManager->CreateMemory(
+			FString::Printf(TEXT("実績解除: %s"), *Achievement.AchievementName),
+			Achievement.Description,
+			EMemoryType::Episodic,
+			EMemoryImportance::High,
+			75.0f
+		);
+	}
+	
+	// Show achievement notification in UI
+	if (UProjectVisibleUIManager* UIManager = GetUIManager())
+	{
+		UIManager->UpdateInvestigationDisplayData();
+	}
+}
+
+void AGemini_CGameMode::OnProgressUpdated(EProgressTrackingType Type, float NewProgress)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Progress updated - %s: %.1f%%"), 
+		   *UEnum::GetValueAsString(Type), NewProgress);
+	
+	// Update phase based on overall progress
+	if (Type == EProgressTrackingType::Overall)
+	{
+		if (NewProgress >= 75.0f && CurrentGamePhase != ELandscapePhase::Completion)
+		{
+			CurrentGamePhase = ELandscapePhase::Completion;
+			UE_LOG(LogProjectVisible, Log, TEXT("Game phase advanced to Completion"));
+		}
+		else if (NewProgress >= 50.0f && CurrentGamePhase != ELandscapePhase::Defense)
+		{
+			CurrentGamePhase = ELandscapePhase::Defense;
+			UE_LOG(LogProjectVisible, Log, TEXT("Game phase advanced to Defense"));
+		}
+		else if (NewProgress >= 25.0f && CurrentGamePhase != ELandscapePhase::Observation)
+		{
+			CurrentGamePhase = ELandscapePhase::Observation;
+			UE_LOG(LogProjectVisible, Log, TEXT("Game phase advanced to Observation"));
+		}
+	}
+	
+	// Record progress in social experiment
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("Progress Updated"),
+			FString::Printf(TEXT("%s_%.1f"), *UEnum::GetValueAsString(Type), NewProgress),
+			NewProgress / 100.0f
 		);
 	}
 }
