@@ -1,0 +1,143 @@
+// Project Visible - Main Game Mode
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/GameModeBase.h"
+#include "LandscapeOfMindTypes.h"
+#include "Gemini_CGameMode.generated.h"
+
+class ULandscapeOfMindManager;
+class UBoundaryDissolutionManager;
+class USocialExperimentManager;
+class UVirtueManager;
+class UMemoryManager;
+class URealityInvestigationManager;
+class UProjectVisibleUIManager;
+
+/**
+ * Project Visible Game Mode - Manages the dual reality/dream world system
+ */
+UCLASS(minimalapi)
+class AGemini_CGameMode : public AGameModeBase
+{
+	GENERATED_BODY()
+
+public:
+	AGemini_CGameMode();
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+public:
+	// Game State Management
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void InitializeProjectVisible();
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void SwitchToRealityMode();
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void SwitchToDreamMode();
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void TriggerBoundaryDissolution(float IntensityLevel);
+
+	// System Access
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	ULandscapeOfMindManager* GetLandscapeManager() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	UVirtueManager* GetVirtueManager() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	UMemoryManager* GetMemoryManager() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	URealityInvestigationManager* GetRealityInvestigationManager() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	UBoundaryDissolutionManager* GetBoundaryDissolutionManager() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	USocialExperimentManager* GetSocialExperimentManager() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	UProjectVisibleUIManager* GetUIManager() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	ELandscapePhase GetCurrentGamePhase() const { return CurrentGamePhase; }
+
+	// Game Events
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void OnPlayerDiscoveryMade(const FString& DiscoveryType, const FString& Evidence);
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void OnLandscapeStabilized(float OldStability, float NewStability);
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void OnExperimentCompleted(const FString& ExperimentType);
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void OnVirtueActionPerformed(const FString& ActionType, const FString& VirtueType, bool bIsPositive);
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void OnMemoryCreated(const FString& MemoryTitle, const FString& MemoryType, float EmotionalIntensity);
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void OnHappinessChanged(float NewHappinessLevel);
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void OnSocialExperimentTriggered(const FString& ExperimentType, const FString& Context);
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible")
+	void OnPlayerBehaviorObserved(const FString& BehaviorType, const FString& Response, float Intensity);
+
+protected:
+	// Game State
+	UPROPERTY(BlueprintReadOnly, Category = "Project Visible")
+	ELandscapePhase CurrentGamePhase;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Project Visible")
+	bool bIsInDreamMode;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Project Visible")
+	float BoundaryDissolutionLevel;
+
+	// Configuration
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Project Visible")
+	FMentalLandscapeConfig DefaultLandscapeConfig;
+
+	// Events
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGamePhaseChanged, ELandscapePhase, NewPhase);
+	UPROPERTY(BlueprintAssignable, Category = "Project Visible")
+	FOnGamePhaseChanged OnGamePhaseChanged;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnModeSwitch, bool, bIsNowDreamMode);
+	UPROPERTY(BlueprintAssignable, Category = "Project Visible")
+	FOnModeSwitch OnModeSwitch;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBoundaryDissolution, float, DissolutionLevel);
+	UPROPERTY(BlueprintAssignable, Category = "Project Visible")
+	FOnBoundaryDissolution OnBoundaryDissolution;
+
+private:
+	// Internal Management
+	void UpdateGamePhase();
+	void ProcessBoundaryEffects(float DeltaTime);
+	void HandleSystemIntegration();
+
+	// Timer Handles
+	FTimerHandle GamePhaseUpdateTimer;
+	FTimerHandle BoundaryEffectTimer;
+
+	// Constants
+	static constexpr float GAME_PHASE_UPDATE_INTERVAL = 2.0f;
+	static constexpr float BOUNDARY_EFFECT_UPDATE_INTERVAL = 0.1f;
+};
+
+
+
