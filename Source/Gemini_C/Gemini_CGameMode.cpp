@@ -16,6 +16,7 @@
 #include "CharacterManager.h"
 #include "GameProgressionManager.h"
 #include "AudioSystemManager.h"
+#include "PerformanceMonitoringManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -300,6 +301,28 @@ void AGemini_CGameMode::InitializeProjectVisible()
 	{
 		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Audio System Manager"));
 	}
+	
+	// Initialize Performance Monitoring Manager
+	if (UPerformanceMonitoringManager* PerfManager = GetPerformanceMonitoringManager())
+	{
+		PerfManager->StartPerformanceMonitoring();
+		
+		// Register for performance events
+		PerfManager->OnPerformanceAlert.AddDynamic(this, &AGemini_CGameMode::OnPerformanceAlert);
+		PerfManager->OnPerformanceMetricsUpdated.AddDynamic(this, &AGemini_CGameMode::OnPerformanceMetricsUpdated);
+		PerfManager->OnQualityLevelChanged.AddDynamic(this, &AGemini_CGameMode::OnQualityLevelChanged);
+		
+		// Set initial performance level
+		PerfManager->SetPerformanceLevel(EPerformanceLevel::Medium);
+		PerfManager->SetAutoOptimizationEnabled(true);
+		
+		UE_LOG(LogProjectVisible, Log, TEXT("Performance Monitoring Manager initialized - Auto-optimization: %s"), 
+			   PerfManager->IsAutoOptimizationEnabled() ? TEXT("Enabled") : TEXT("Disabled"));
+	}
+	else
+	{
+		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Performance Monitoring Manager"));
+	}
 
 	UE_LOG(LogProjectVisible, Log, TEXT("Project Visible systems initialized - All systems operational"));
 }
@@ -499,6 +522,18 @@ UAudioSystemManager* AGemini_CGameMode::GetAudioSystemManager() const
 		if (UGameInstance* GameInstance = World->GetGameInstance())
 		{
 			return GameInstance->GetSubsystem<UAudioSystemManager>();
+		}
+	}
+	return nullptr;
+}
+
+UPerformanceMonitoringManager* AGemini_CGameMode::GetPerformanceMonitoringManager() const
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			return GameInstance->GetSubsystem<UPerformanceMonitoringManager>();
 		}
 	}
 	return nullptr;
@@ -1292,6 +1327,166 @@ void AGemini_CGameMode::OnSoundEffectTriggered(const FSoundEffect& Effect)
 				);
 			}
 			break;
+	}
+}
+
+void AGemini_CGameMode::OnPerformanceAlert(const FPerformanceAlert& Alert)
+{
+	UE_LOG(LogProjectVisible, Warning, TEXT("Performance Alert: %s - %s (Severity: %.1f)"), 
+		   *UEnum::GetValueAsString(Alert.AlertType), *Alert.Description, Alert.Severity);
+	
+	// Handle different alert types
+	switch (Alert.AlertType)
+	{
+		case EPerformanceAlertType::LowFrameRate:
+			// Auto-reduce quality if severe frame rate drop
+			if (Alert.Severity > 7.0f)
+			{
+				if (UPerformanceMonitoringManager* PerfManager = GetPerformanceMonitoringManager())
+				{
+					PerfManager->AutoAdjustQualityLevel();
+				}
+			}
+			break;
+			
+		case EPerformanceAlertType::HighMemoryUsage:
+			// Trigger memory cleanup
+			if (UPerformanceMonitoringManager* PerfManager = GetPerformanceMonitoringManager())
+			{
+				PerfManager->OptimizeMemoryUsage();
+			}
+			break;
+			
+		case EPerformanceAlertType::SystemOverload:
+			// Reduce overall system load
+			if (UAudioSystemManager* AudioManager = GetAudioSystemManager())
+			{
+				AudioManager->SetIntensityLevel(3.0f); // Reduce audio complexity
+			}
+			break;
+	}
+	
+	// Create memory of performance issue for social experiment
+	if (UMemoryManager* MemoryManager = GetMemoryManager())
+	{
+		MemoryManager->CreateMemory(
+			FString::Printf(TEXT("パフォーマンス警告: %s"), *UEnum::GetValueAsString(Alert.AlertType)),
+			Alert.Description,
+			EMemoryType::Procedural,
+			EMemoryImportance::Medium,
+			Alert.Severity * 10.0f
+		);
+	}
+	
+	// Record performance alert in social experiment
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("Performance Alert"),
+			FString::Printf(TEXT("%s_%.1f"), *UEnum::GetValueAsString(Alert.AlertType), Alert.Severity),
+			Alert.Severity / 10.0f
+		);
+	}
+}
+
+void AGemini_CGameMode::OnPerformanceMetricsUpdated(const FPerformanceMetrics& NewMetrics, const FPerformanceMetrics& PreviousMetrics)
+{
+	// Log significant performance changes
+	float FrameRateDelta = NewMetrics.FrameRate - PreviousMetrics.FrameRate;
+	if (FMath::Abs(FrameRateDelta) > 5.0f)
+	{
+		UE_LOG(LogProjectVisible, Log, TEXT("Frame rate changed: %.1f -> %.1f FPS (Delta: %.1f)"), 
+			   PreviousMetrics.FrameRate, NewMetrics.FrameRate, FrameRateDelta);
+	}
+	
+	// Update UI with performance information
+	if (UProjectVisibleUIManager* UIManager = GetUIManager())
+	{
+		UIManager->UpdateInvestigationDisplayData();
+	}
+	
+	// Adjust game atmosphere based on performance
+	if (NewMetrics.OverallPerformanceScore < 50.0f)
+	{
+		// Poor performance - reduce intensity
+		if (UBoundaryDissolutionManager* BoundaryManager = GetBoundaryDissolutionManager())
+		{
+			BoundaryManager->SetDissolutionIntensity(0.2f);
+		}
+		
+		if (UAudioSystemManager* AudioManager = GetAudioSystemManager())
+		{
+			AudioManager->SetAudioMood(EAudioMood::Calm);
+		}
+	}
+	else if (NewMetrics.OverallPerformanceScore > 80.0f)
+	{
+		// Good performance - can increase intensity
+		if (UBoundaryDissolutionManager* BoundaryManager = GetBoundaryDissolutionManager())
+		{
+			BoundaryManager->SetDissolutionIntensity(0.6f);
+		}
+	}
+}
+
+void AGemini_CGameMode::OnQualityLevelChanged(EPerformanceLevel OldLevel, EPerformanceLevel NewLevel)
+{
+	UE_LOG(LogProjectVisible, Log, TEXT("Quality level changed: %s -> %s"), 
+		   *UEnum::GetValueAsString(OldLevel), *UEnum::GetValueAsString(NewLevel));
+	
+	// Adjust audio quality based on performance level
+	if (UAudioSystemManager* AudioManager = GetAudioSystemManager())
+	{
+		switch (NewLevel)
+		{
+			case EPerformanceLevel::Lowest:
+			case EPerformanceLevel::Low:
+				AudioManager->SetIntensityLevel(3.0f);
+				break;
+			case EPerformanceLevel::Medium:
+				AudioManager->SetIntensityLevel(5.0f);
+				break;
+			case EPerformanceLevel::High:
+			case EPerformanceLevel::Highest:
+				AudioManager->SetIntensityLevel(7.0f);
+				break;
+		}
+	}
+	
+	// Create memory of quality change
+	if (UMemoryManager* MemoryManager = GetMemoryManager())
+	{
+		MemoryManager->CreateMemory(
+			TEXT("画質設定変更"),
+			FString::Printf(TEXT("ゲーム品質が%sから%sに変更された"), 
+				*UEnum::GetValueAsString(OldLevel), *UEnum::GetValueAsString(NewLevel)),
+			EMemoryType::Procedural,
+			EMemoryImportance::Low,
+			20.0f
+		);
+	}
+	
+	// Award virtue for accepting performance optimization
+	if (static_cast<uint8>(NewLevel) < static_cast<uint8>(OldLevel))
+	{
+		if (UVirtueManager* VirtueManager = GetVirtueManager())
+		{
+			VirtueManager->UpdateVirtueLevel(EVirtueType::Temperance, 2.0f, TEXT("パフォーマンス最適化を受け入れた"));
+		}
+	}
+	
+	// Record quality change in social experiment
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("Quality Level Changed"),
+			FString::Printf(TEXT("%s->%s"), *UEnum::GetValueAsString(OldLevel), *UEnum::GetValueAsString(NewLevel)),
+			static_cast<float>(static_cast<uint8>(NewLevel)) / 5.0f
+		);
 	}
 }
 
