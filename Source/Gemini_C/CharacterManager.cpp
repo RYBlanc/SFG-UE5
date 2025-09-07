@@ -543,3 +543,267 @@ UProjectVisibleUIManager* UCharacterManager::GetUIManager()
     }
     return nullptr;
 }
+
+// Knowledge Management Functions (Minimal Implementation)
+void UCharacterManager::AddCharacterKnowledge(const FString& CharacterID, const FString& Knowledge, float Importance)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Adding knowledge to character %s: %s (Importance: %.2f)"), *CharacterID, *Knowledge, Importance);
+    // Minimal implementation - just log for now
+}
+
+void UCharacterManager::RevealCharacterSecret(const FString& CharacterID, const FString& Secret)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Revealing secret for character %s: %s"), *CharacterID, *Secret);
+    // Minimal implementation - just log for now
+}
+
+void UCharacterManager::AddCharacterMemory(const FString& CharacterID, const FString& Memory)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Adding memory to character %s: %s"), *CharacterID, *Memory);
+    // Minimal implementation - just log for now
+}
+
+// Dialogue Functions (Minimal Implementation)
+FDialogueEffectiveness UCharacterManager::CalculateDialogueEffectiveness(const FString& CharacterID, EDialogueApproach Approach) const
+{
+    FDialogueEffectiveness Result;
+    Result.BaseEffectiveness = 0.5f;
+    Result.PersonalityModifier = 0.0f;
+    Result.EmotionalModifier = 0.2f;
+    Result.RelationshipModifier = 0.0f;
+    Result.ContextModifier = 0.1f;
+    Result.TotalEffectiveness = 0.5f;
+    
+    UE_LOG(LogProjectVisible, Log, TEXT("Calculating dialogue effectiveness for %s with approach %s"), 
+           *CharacterID, *UEnum::GetValueAsString(Approach));
+    
+    return Result;
+}
+
+// Psychology Functions (Minimal Implementation)
+void UCharacterManager::UpdatePsychologicalProfile(const FString& CharacterID, const FNPCPsychProfile& Profile)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Updating psychological profile for character %s"), *CharacterID);
+    // Minimal implementation - just log for now
+}
+
+FNPCPsychProfile UCharacterManager::GetPsychologicalProfile(const FString& CharacterID) const
+{
+    FNPCPsychProfile DefaultProfile;
+    DefaultProfile.Openness = 50.0f;
+    DefaultProfile.Extraversion = 50.0f;
+    DefaultProfile.Neuroticism = 30.0f;
+    DefaultProfile.Agreeableness = 60.0f;
+    DefaultProfile.Conscientiousness = 50.0f;
+    DefaultProfile.StressLevel = 30.0f;
+    DefaultProfile.EmotionalStability = 60.0f;
+    DefaultProfile.IntelligenceLevel = 50.0f;
+    DefaultProfile.SelfEsteem = 50.0f;
+    DefaultProfile.Personality = ENPCPersonality::Analytical;
+    DefaultProfile.PrimaryMotivation = ECharacterMotivation::Survival;
+    DefaultProfile.SecondaryMotivation = ECharacterMotivation::Security;
+    
+    UE_LOG(LogProjectVisible, Log, TEXT("Getting psychological profile for character %s"), *CharacterID);
+    
+    return DefaultProfile;
+}
+
+ENPCEmotionalState UCharacterManager::PredictEmotionalReaction(const FString& CharacterID, EDialogueApproach Approach) const
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Predicting emotional reaction for %s with approach %s"), 
+           *CharacterID, *UEnum::GetValueAsString(Approach));
+    
+    // Simple prediction based on approach
+    switch (Approach)
+    {
+        case EDialogueApproach::Intimidation:
+            return ENPCEmotionalState::Fearful;
+        case EDialogueApproach::Accusation:
+            return ENPCEmotionalState::Hostile;
+        case EDialogueApproach::Empathy:
+            return ENPCEmotionalState::Cooperative;
+        case EDialogueApproach::Logic:
+            return ENPCEmotionalState::Confident;
+        case EDialogueApproach::Question:
+            return ENPCEmotionalState::Neutral;
+        default:
+            return ENPCEmotionalState::Neutral;
+    }
+}
+
+float UCharacterManager::CalculateStressLevel(const FString& CharacterID) const
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Calculating stress level for character %s"), *CharacterID);
+    return 0.3f; // Default stress level
+}
+
+// Social Class Functions (Minimal Implementation)
+void UCharacterManager::ProcessClassBasedBias(const FString& CharacterID, ESocialClass PlayerClass)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Processing class-based bias for character %s with player class %s"), 
+           *CharacterID, *UEnum::GetValueAsString(PlayerClass));
+    // Minimal implementation - just log for now
+}
+
+TArray<FString> UCharacterManager::GetClassConflicts(ESocialClass SocialClass) const
+{
+    TArray<FString> Conflicts;
+    
+    switch (SocialClass)
+    {
+        case ESocialClass::Viewer:
+            Conflicts.Add(TEXT("Authority figures"));
+            break;
+        case ESocialClass::Operator:
+            Conflicts.Add(TEXT("System critics"));
+            break;
+        case ESocialClass::AI:
+            Conflicts.Add(TEXT("Traditionalists"));
+            break;
+        case ESocialClass::Invisible:
+            Conflicts.Add(TEXT("Everyone"));
+            break;
+        case ESocialClass::Unknown:
+            Conflicts.Add(TEXT("Uncertainty"));
+            break;
+        default:
+            break;
+    }
+    
+    UE_LOG(LogProjectVisible, Log, TEXT("Getting class conflicts for %s"), *UEnum::GetValueAsString(SocialClass));
+    
+    return Conflicts;
+}
+
+// Information Functions (Minimal Implementation)
+TArray<FString> UCharacterManager::ExtractInformation(const FString& CharacterID, EDialogueApproach Approach)
+{
+    TArray<FString> Information;
+    Information.Add(TEXT("Basic character information"));
+    Information.Add(TEXT("Current mood state"));
+    
+    UE_LOG(LogProjectVisible, Log, TEXT("Extracting information from character %s using approach %s"), 
+           *CharacterID, *UEnum::GetValueAsString(Approach));
+    
+    return Information;
+}
+
+float UCharacterManager::GetInformationValue(const FString& CharacterID, const FString& Information) const
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Getting information value for character %s: %s"), *CharacterID, *Information);
+    return 0.5f; // Default information value
+}
+
+bool UCharacterManager::DetectDeception(const FString& CharacterID, const FString& Statement) const
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Detecting deception for character %s: %s"), *CharacterID, *Statement);
+    return false; // Default no deception detected
+}
+
+void UCharacterManager::ShareInformationBetweenCharacters(const FString& SourceCharacterID, const FString& TargetCharacterID, const FString& Information)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Sharing information between characters %s -> %s: %s"), 
+           *SourceCharacterID, *TargetCharacterID, *Information);
+    // Minimal implementation - just log for now
+}
+
+// Character Development Functions (Minimal Implementation)
+void UCharacterManager::UpdateCharacterDevelopment(const FString& CharacterID, const FString& DevelopmentAspect, float Value)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Updating character development for %s: %s (%.2f)"), 
+           *CharacterID, *DevelopmentAspect, Value);
+    // Minimal implementation - just log for now
+}
+
+void UCharacterManager::TriggerCharacterEvent(const FString& CharacterID, const FString& EventType, const FString& EventData)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Triggering character event for %s: %s (%s)"), 
+           *CharacterID, *EventType, *EventData);
+    // Minimal implementation - just log for now
+}
+
+void UCharacterManager::ProcessCharacterArc(const FString& CharacterID, float ProgressValue)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Processing character arc for %s: %.2f"), *CharacterID, ProgressValue);
+    // Minimal implementation - just log for now
+}
+
+// Relationship Functions (Minimal Implementation)
+void UCharacterManager::BuildRelationshipMatrix()
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Building relationship matrix"));
+    // Minimal implementation - just log for now
+}
+
+TArray<FString> UCharacterManager::GetRelatedCharacters(const FString& CharacterID) const
+{
+    TArray<FString> RelatedCharacters;
+    RelatedCharacters.Add(TEXT("DefaultRelatedCharacter1"));
+    RelatedCharacters.Add(TEXT("DefaultRelatedCharacter2"));
+    
+    UE_LOG(LogProjectVisible, Log, TEXT("Getting related characters for %s"), *CharacterID);
+    
+    return RelatedCharacters;
+}
+
+void UCharacterManager::UpdateRelationshipDynamics(const FString& Character1ID, const FString& Character2ID, float RelationshipChange)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Updating relationship dynamics between %s and %s: %.2f"), 
+           *Character1ID, *Character2ID, RelationshipChange);
+    // Minimal implementation - just log for now
+}
+
+// AI Functions (Minimal Implementation)
+void UCharacterManager::UpdateCharacterAI(const FString& CharacterID, float DeltaTime)
+{
+    UE_LOG(LogProjectVisible, VeryVerbose, TEXT("Updating character AI for %s (DeltaTime: %.2f)"), *CharacterID, DeltaTime);
+    // Minimal implementation - just log for now
+}
+
+void UCharacterManager::SetCharacterGoal(const FString& CharacterID, const FString& Goal, float Priority)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Setting character goal for %s: %s (Priority: %.2f)"), 
+           *CharacterID, *Goal, Priority);
+    // Minimal implementation - just log for now
+}
+
+void UCharacterManager::ProcessCharacterDecision(const FString& CharacterID, const TArray<FString>& Options)
+{
+    FString OptionsString = FString::Join(Options, TEXT(", "));
+    UE_LOG(LogProjectVisible, Log, TEXT("Processing character decision for %s with options: %s"), 
+           *CharacterID, *OptionsString);
+    // Minimal implementation - just log for now
+}
+
+// Analysis Functions (Minimal Implementation)
+void UCharacterManager::AnalyzeCharacterInteractions()
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Analyzing character interactions"));
+    // Minimal implementation - just log for now
+}
+
+void UCharacterManager::RecordCharacterAnalytics(const FString& CharacterID, const FString& EventType, const FString& Data)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Recording character analytics for %s: %s (%s)"), 
+           *CharacterID, *EventType, *Data);
+    // Minimal implementation - just log for now
+}
+
+// Story Integration Functions (Minimal Implementation)
+void UCharacterManager::SynchronizeWithStorySystem()
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Synchronizing with story system"));
+    // Minimal implementation - just log for now
+}
+
+void UCharacterManager::UpdateCharactersForStoryPhase(EStoryPhase StoryPhase)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Updating characters for story phase: %s"), *UEnum::GetValueAsString(StoryPhase));
+    // Minimal implementation - just log for now
+}
+
+void UCharacterManager::HandleStoryEvents(const FString& EventType, const FString& EventData)
+{
+    UE_LOG(LogProjectVisible, Log, TEXT("Handling story event: %s (%s)"), *EventType, *EventData);
+    // Minimal implementation - just log for now
+}
