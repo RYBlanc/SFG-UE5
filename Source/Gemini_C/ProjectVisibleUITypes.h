@@ -21,6 +21,7 @@ enum class EProjectVisibleScreenType : uint8
     VirtueProfile   UMETA(DisplayName = "Virtue Profile"),     // 徳プロファイル
     MemoryViewer    UMETA(DisplayName = "Memory Viewer"),      // 記憶ビューア
     Settings        UMETA(DisplayName = "Settings"),           // 設定
+    QuickMenu       UMETA(DisplayName = "Quick Menu"),         // クイックメニュー (GameAndUI)
     BoundaryEffect  UMETA(DisplayName = "Boundary Effect"),    // 境界崩壊エフェクト
     Pause           UMETA(DisplayName = "Pause"),              // ポーズ
     GameOver        UMETA(DisplayName = "Game Over"),          // ゲームオーバー

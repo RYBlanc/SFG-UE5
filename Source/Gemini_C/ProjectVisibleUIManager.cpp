@@ -22,11 +22,14 @@ void UProjectVisibleUIManager::Initialize(FSubsystemCollectionBase& Collection)
     bAutoSaveThemeSettings = true;
     
     // Initialize state
-    CurrentScreen = EProjectVisibleScreenType::MainMenu;
+    CurrentScreen = EProjectVisibleScreenType::RealityMode;
     
     // Initialize configurations
     InitializeDefaultThemes();
     InitializeDefaultScreenClasses();
+    
+    // Register widget classes
+    RegisterDefaultWidgetClasses();
     
     UE_LOG(LogProjectVisible, Log, TEXT("Project Visible UI Manager initialized with CommonUI"));
 }
@@ -187,20 +190,28 @@ void UProjectVisibleUIManager::ClearScreenStack()
 
 void UProjectVisibleUIManager::ShowModal(EProjectVisibleScreenType ScreenType, EUIInputPriority Priority)
 {
+    UE_LOG(LogProjectVisible, Warning, TEXT("ShowModal called for: %s"), *UEnum::GetValueAsString(ScreenType));
+    
     ActiveModals.AddUnique(ScreenType);
     
     UUserWidget* ModalWidget = GetOrCreateScreenWidget(ScreenType);
     if (ModalWidget)
     {
+        UE_LOG(LogProjectVisible, Warning, TEXT("Modal widget created successfully: %s"), *ModalWidget->GetClass()->GetName());
         ModalWidgetStack.Add(ModalWidget);
         ModalWidget->AddToViewport(1000); // High Z-order for modals
         ModalWidget->SetVisibility(ESlateVisibility::Visible);
+        UE_LOG(LogProjectVisible, Warning, TEXT("Modal widget added to viewport and made visible"));
+    }
+    else
+    {
+        UE_LOG(LogProjectVisible, Error, TEXT("Failed to create modal widget for: %s"), *UEnum::GetValueAsString(ScreenType));
     }
     
     // Set input priority
     ConfigureInputForScreen(ScreenType);
     
-    UE_LOG(LogProjectVisible, Log, TEXT("Showed modal: %s"), *UEnum::GetValueAsString(ScreenType));
+    UE_LOG(LogProjectVisible, Warning, TEXT("Showed modal: %s"), *UEnum::GetValueAsString(ScreenType));
 }
 
 void UProjectVisibleUIManager::HideModal(EProjectVisibleScreenType ScreenType)
@@ -526,6 +537,15 @@ void UProjectVisibleUIManager::RegisterScreenWidgetClass(EProjectVisibleScreenTy
     UE_LOG(LogProjectVisible, Log, TEXT("Registered widget class for screen: %s"), *UEnum::GetValueAsString(ScreenType));
 }
 
+void UProjectVisibleUIManager::RegisterDefaultWidgetClasses()
+{
+    // Register default widget classes for each screen type
+    // These would typically be loaded from configuration or set up in the constructor
+    // For now, we'll leave them empty and they'll be registered from Blueprint
+    
+    UE_LOG(LogProjectVisible, Log, TEXT("Default widget class registration completed"));
+}
+
 // Helper Functions
 void UProjectVisibleUIManager::InitializeDefaultThemes()
 {
@@ -694,6 +714,7 @@ void UProjectVisibleUIManager::ConfigureInputForScreen(EProjectVisibleScreenType
         case EProjectVisibleScreenType::RealityMode:
         case EProjectVisibleScreenType::DreamMode:
         case EProjectVisibleScreenType::Investigation:
+        case EProjectVisibleScreenType::QuickMenu:
             RestoreGameInput();
             break;
         default:
@@ -783,4 +804,31 @@ void UProjectVisibleUIManager::UpdateResponsiveLayout()
     }
     
     UE_LOG(LogProjectVisible, Log, TEXT("Updated responsive layout"));
+}
+
+void UProjectVisibleUIManager::AddTestModal(UUserWidget* Widget)
+{
+    if (Widget)
+    {
+        ModalWidgetStack.Add(Widget);
+        UE_LOG(LogProjectVisible, Log, TEXT("Test modal added to stack"));
+    }
+}
+
+void UProjectVisibleUIManager::ClearAllModals()
+{
+    for (TWeakObjectPtr<UUserWidget> ModalWidget : ModalWidgetStack)
+    {
+        if (ModalWidget.IsValid())
+        {
+            ModalWidget->RemoveFromParent();
+        }
+    }
+    ModalWidgetStack.Empty();
+    UE_LOG(LogProjectVisible, Log, TEXT("All modals cleared"));
+}
+
+bool UProjectVisibleUIManager::HasActiveModals() const
+{
+    return ModalWidgetStack.Num() > 0;
 }

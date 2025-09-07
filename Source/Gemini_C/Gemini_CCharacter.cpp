@@ -10,6 +10,12 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "ProjectVisibleUIManager.h"
+#include "ProjectVisibleQuickMenuWidget.h"
+#include "Engine/World.h"
+#include "Engine/Engine.h"
+#include "Blueprint/UserWidget.h"
+#include "Framework/Application/SlateApplication.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -86,6 +92,9 @@ void AGemini_CCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGemini_CCharacter::Look);
+
+		// Menu Toggle
+		EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Started, this, &AGemini_CCharacter::ToggleMenu);
 	}
 	else
 	{
@@ -127,4 +136,115 @@ void AGemini_CCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void AGemini_CCharacter::ToggleMenu(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemplateCharacter, Warning, TEXT("ToggleMenu called - Tab key pressed!"));
+	
+	// Get UI Manager and toggle menu
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			if (UProjectVisibleUIManager* UIManager = GameInstance->GetSubsystem<UProjectVisibleUIManager>())
+			{
+				UE_LOG(LogTemplateCharacter, Warning, TEXT("UIManager found successfully"));
+				
+				// Check if there are active modals first (prioritize modal state over current screen)
+				bool bHasActiveModals = UIManager->HasActiveModals();
+				EProjectVisibleScreenType CurrentScreen = UIManager->GetCurrentScreen();
+				
+				UE_LOG(LogTemplateCharacter, Warning, TEXT("Current screen: %s, Has active modals: %s"), 
+					*UEnum::GetValueAsString(CurrentScreen), 
+					bHasActiveModals ? TEXT("Yes") : TEXT("No"));
+				
+				if (bHasActiveModals)
+				{
+					// Close any open modal (Quick Menu is open)
+					UE_LOG(LogTemplateCharacter, Warning, TEXT("Closing modal widgets (Quick Menu)..."));
+					
+					// Remove all modal widgets
+					UIManager->ClearAllModals();
+					
+					// Restore game input
+					if (APlayerController* PC = World->GetFirstPlayerController())
+					{
+						FInputModeGameOnly InputMode;
+						PC->SetInputMode(InputMode);
+						PC->SetShowMouseCursor(false);
+					}
+					
+					UE_LOG(LogTemplateCharacter, Warning, TEXT("Quick Menu closed"));
+				}
+				else if (CurrentScreen == EProjectVisibleScreenType::RealityMode)
+				{
+					// Open Quick Menu
+					UE_LOG(LogTemplateCharacter, Warning, TEXT("Opening Quick Menu..."));
+					
+					// Get Player Controller for widget creation
+					if (APlayerController* PC = World->GetFirstPlayerController())
+					{
+						// Create ProjectVisibleQuickMenuWidget
+						UProjectVisibleQuickMenuWidget* QuickMenuWidget = CreateWidget<UProjectVisibleQuickMenuWidget>(PC, UProjectVisibleQuickMenuWidget::StaticClass());
+						if (QuickMenuWidget)
+						{
+							// Set widget to fill the entire screen
+							QuickMenuWidget->SetAnchorsInViewport(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+							QuickMenuWidget->SetAlignmentInViewport(FVector2D(0.0f, 0.0f));
+							
+							QuickMenuWidget->AddToViewport(1000);
+							QuickMenuWidget->SetVisibility(ESlateVisibility::Visible);
+							
+							// Store reference for closing later
+							UIManager->AddTestModal(QuickMenuWidget);
+							
+							UE_LOG(LogTemplateCharacter, Warning, TEXT("Quick Menu widget created and shown"));
+							
+							// Show mouse cursor
+							PC->SetShowMouseCursor(true);
+							
+							// Set GameAndUI input mode
+							FInputModeGameAndUI InputMode;
+							InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+							InputMode.SetHideCursorDuringCapture(false);
+							InputMode.SetWidgetToFocus(QuickMenuWidget->TakeWidget());
+							PC->SetInputMode(InputMode);
+						}
+						else
+						{
+							UE_LOG(LogTemplateCharacter, Error, TEXT("Failed to create Quick Menu widget"));
+						}
+					}
+				}
+				else
+				{
+					// From any other screen, go back to reality mode
+					UIManager->ReplaceScreen(EProjectVisibleScreenType::RealityMode);
+					UE_LOG(LogTemplateCharacter, Warning, TEXT("Returned to Reality Mode (Tab key pressed)"));
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemplateCharacter, Error, TEXT("UIManager not found!"));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemplateCharacter, Error, TEXT("GameInstance not found!"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemplateCharacter, Error, TEXT("World not found!"));
+	}
+}
+
+void AGemini_CCharacter::TestToggleMenu()
+{
+	UE_LOG(LogTemplateCharacter, Warning, TEXT("TestToggleMenu called from console!"));
+	
+	// Create a dummy input action value
+	FInputActionValue DummyValue;
+	ToggleMenu(DummyValue);
 }

@@ -86,10 +86,11 @@ void UPerformanceMonitoringManager::Tick(float DeltaTime)
         CheckPerformanceThresholds();
         ProcessAlerts();
         
-        if (OptimizationSettings.bAutoOptimizationEnabled)
-        {
-            ApplyAutoOptimizations();
-        }
+        // Temporarily disable auto-optimization to prevent crashes
+        // if (OptimizationSettings.bAutoOptimizationEnabled)
+        // {
+        //     ApplyAutoOptimizations();
+        // }
         
         TimeSinceLastUpdate = 0.0f;
     }
@@ -1061,7 +1062,7 @@ UAudioSystemManager* UPerformanceMonitoringManager::GetAudioSystemManager()
     {
         if (UGameInstance* GameInstance = World->GetGameInstance())
         {
-            return GameInstance->GetSubsystem<UAudioSystemManager>();
+            return nullptr; // GameInstance->GetSubsystem<UAudioSystemManager>(); // Temporarily disabled
         }
     }
     return nullptr;

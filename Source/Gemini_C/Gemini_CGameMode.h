@@ -26,7 +26,7 @@ class UStoryManager;
 class ULevelDesignManager;
 class UCharacterManager;
 class UGameProgressionManager;
-class UAudioSystemManager;
+// class UAudioSystemManager; // Temporarily disabled - using ProjectVisibleAudioManager
 class UPerformanceMonitoringManager;
 class UUIPolishManager;
 
@@ -94,8 +94,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
 	UGameProgressionManager* GetGameProgressionManager() const;
 
-	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
-	UAudioSystemManager* GetAudioSystemManager() const;
+	// UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure) // Temporarily disabled
+	// UAudioSystemManager* GetAudioSystemManager() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
 	UPerformanceMonitoringManager* GetPerformanceMonitoringManager() const;
@@ -176,14 +176,14 @@ public:
 	UFUNCTION()
 	void OnProgressUpdated(EProgressTrackingType Type, float NewProgress);
 
-	UFUNCTION()
-	void OnMusicTrackChanged(const FMusicTrack& NewTrack, const FMusicTrack& OldTrack);
+	// UFUNCTION() // Temporarily disabled - using ProjectVisibleAudioManager
+	// void OnMusicTrackChanged(const FMusicTrack& NewTrack, const FMusicTrack& OldTrack);
 
-	UFUNCTION()
-	void OnAudioMoodChanged(EAudioMood OldMood, EAudioMood NewMood);
+	// UFUNCTION() // Temporarily disabled
+	// void OnAudioMoodChanged(EAudioMood OldMood, EAudioMood NewMood);
 
-	UFUNCTION()
-	void OnSoundEffectTriggered(const FSoundEffect& Effect);
+	// UFUNCTION() // Temporarily disabled
+	// void OnSoundEffectTriggered(const FSoundEffect& Effect);
 
 	UFUNCTION()
 	void OnPerformanceAlert(const FPerformanceAlert& Alert);

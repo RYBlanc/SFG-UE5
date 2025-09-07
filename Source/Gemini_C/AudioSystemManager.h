@@ -1,5 +1,8 @@
 // Project Visible - Audio System Manager
 // Copyright Epic Games, Inc. All Rights Reserved.
+// TEMPORARILY DISABLED - Using ProjectVisibleAudioManager instead
+
+#if 0 // Disable this entire file temporarily
 
 #pragma once
 
@@ -8,7 +11,7 @@
 #include "Engine/World.h"
 #include "Components/AudioComponent.h"
 #include "Sound/SoundMix.h"
-#include "AudioSystemTypes.h"
+// #include "AudioSystemTypes.h" // Commented out - using new ProjectVisibleAudioManager instead
 #include "AudioSystemManager.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMusicTrackChanged, const FMusicTrack&, NewTrack, const FMusicTrack&, OldTrack);
@@ -22,14 +25,14 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSpatialZoneChanged, ESpatialAudi
  * Central manager for Project Visible's adaptive audio system
  * Manages dynamic music, psychoacoustic effects, spatial audio, and mood-based audio adaptation
  */
-UCLASS()
-class GEMINI_C_API UAudioSystemManager : public UGameInstanceSubsystem
+// UCLASS() // Temporarily disabled - using ProjectVisibleAudioManager instead
+class GEMINI_C_API UAudioSystemManager_Disabled // : public UGameInstanceSubsystem
 {
-    GENERATED_BODY()
+    // GENERATED_BODY() // Disabled
 
 public:
-    virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-    virtual void Deinitialize() override;
+    // virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+    // virtual void Deinitialize() override;
 
     // System Initialization
     UFUNCTION(BlueprintCallable, Category = "Audio System")
@@ -373,3 +376,5 @@ private:
     class USocialExperimentManager* GetExperimentManager();
     class UBoundaryDissolutionManager* GetBoundaryManager();
 };
+
+#endif // Temporarily disabled

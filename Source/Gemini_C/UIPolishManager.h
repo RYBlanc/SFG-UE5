@@ -203,8 +203,8 @@ public:
     UFUNCTION(BlueprintCallable, Category = "UI Polish | Integration")
     void OnPerformanceLevelChanged(EPerformanceLevel PerformanceLevel);
 
-    UFUNCTION(BlueprintCallable, Category = "UI Polish | Integration")
-    void OnAudioMoodChanged(EAudioMood AudioMood);
+    // UFUNCTION(BlueprintCallable, Category = "UI Polish | Integration") // Temporarily disabled
+    // void OnAudioMoodChanged(EAudioMood AudioMood);
 
     UFUNCTION(BlueprintCallable, Category = "UI Polish | Integration")
     void OnStoryPhaseChanged(EStoryPhase StoryPhase);
@@ -336,7 +336,7 @@ private:
     // Integration Helpers
     class UProjectVisibleUIManager* GetUIManager();
     class UPerformanceMonitoringManager* GetPerformanceManager();
-    class UAudioSystemManager* GetAudioManager();
+    // class UAudioSystemManager* GetAudioManager(); // Temporarily disabled
     class UStoryManager* GetStoryManager();
     class UBoundaryDissolutionManager* GetBoundaryManager();
     class USocialExperimentManager* GetExperimentManager();

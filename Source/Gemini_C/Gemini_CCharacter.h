@@ -44,6 +44,10 @@ class AGemini_CCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	/** UI Menu Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* MenuAction;
+
 public:
 	AGemini_CCharacter();
 	
@@ -55,6 +59,13 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	/** Called for menu input */
+	void ToggleMenu(const FInputActionValue& Value);
+
+	/** Debug function to test menu toggle without input action */
+	UFUNCTION(Exec)
+	void TestToggleMenu();
 			
 
 protected:

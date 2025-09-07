@@ -51,28 +51,28 @@ void AGemini_CGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UE_LOG(LogProjectVisible, Log, TEXT("Project Visible Game Mode beginning play"));
+	UE_LOG(LogProjectVisible, Log, TEXT("Project Visible Game Mode beginning play - SAFE MODE"));
 
 	// Initialize Project Visible systems
 	InitializeProjectVisible();
 
-	// Set up periodic updates
-	if (UWorld* World = GetWorld())
-	{
-		FTimerManager& TimerManager = World->GetTimerManager();
-
-		// Game phase update timer
-		TimerManager.SetTimer(GamePhaseUpdateTimer, [this]()
-		{
-			UpdateGamePhase();
-		}, GAME_PHASE_UPDATE_INTERVAL, true);
-
-		// Boundary effect update timer
-		TimerManager.SetTimer(BoundaryEffectTimer, [this]()
-		{
-			ProcessBoundaryEffects(BOUNDARY_EFFECT_UPDATE_INTERVAL);
-		}, BOUNDARY_EFFECT_UPDATE_INTERVAL, true);
-	}
+	// Set up periodic updates - COMPLETELY DISABLED FOR CRASH DEBUGGING
+	// if (UWorld* World = GetWorld())
+	// {
+	//	FTimerManager& TimerManager = World->GetTimerManager();
+	//
+	//	// Game phase update timer
+	//	TimerManager.SetTimer(GamePhaseUpdateTimer, [this]()
+	//	{
+	//		UpdateGamePhase();
+	//	}, GAME_PHASE_UPDATE_INTERVAL, true);
+	//
+	//	// Boundary effect update timer
+	//	TimerManager.SetTimer(BoundaryEffectTimer, [this]()
+	//	{
+	//		ProcessBoundaryEffects(BOUNDARY_EFFECT_UPDATE_INTERVAL);
+	//	}, BOUNDARY_EFFECT_UPDATE_INTERVAL, true);
+	// }
 }
 
 void AGemini_CGameMode::Tick(float DeltaTime)
@@ -189,8 +189,8 @@ void AGemini_CGameMode::InitializeProjectVisible()
 		AccessibilityConfig.bEnableAccessibility = true;
 		UIManager->SetAccessibilityConfig(AccessibilityConfig);
 		
-		// Show main menu
-		UIManager->PushScreen(EProjectVisibleScreenType::MainMenu, false);
+		// Show reality mode instead of main menu for gameplay
+		UIManager->PushScreen(EProjectVisibleScreenType::RealityMode, false);
 		
 		UE_LOG(LogProjectVisible, Log, TEXT("UI Manager initialized with CommonUI"));
 	}
@@ -281,7 +281,8 @@ void AGemini_CGameMode::InitializeProjectVisible()
 		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Game Progression Manager"));
 	}
 	
-	// Initialize Audio System Manager
+	// Initialize Audio System Manager - TEMPORARILY DISABLED
+	/*
 	if (UAudioSystemManager* AudioManager = GetAudioSystemManager())
 	{
 		AudioManager->InitializeAudioSystem();
@@ -298,32 +299,29 @@ void AGemini_CGameMode::InitializeProjectVisible()
 		UE_LOG(LogProjectVisible, Log, TEXT("Audio System Manager initialized - Adaptive music: %s"), 
 			   AudioManager->IsAdaptiveMusicEnabled() ? TEXT("Enabled") : TEXT("Disabled"));
 	}
-	else
-	{
-		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Audio System Manager"));
-	}
+	*/
 	
-	// Initialize Performance Monitoring Manager
-	if (UPerformanceMonitoringManager* PerfManager = GetPerformanceMonitoringManager())
-	{
-		PerfManager->StartPerformanceMonitoring();
-		
-		// Register for performance events
-		PerfManager->OnPerformanceAlert.AddDynamic(this, &AGemini_CGameMode::OnPerformanceAlert);
-		PerfManager->OnPerformanceMetricsUpdated.AddDynamic(this, &AGemini_CGameMode::OnPerformanceMetricsUpdated);
-		PerfManager->OnQualityLevelChanged.AddDynamic(this, &AGemini_CGameMode::OnQualityLevelChanged);
-		
-		// Set initial performance level
-		PerfManager->SetPerformanceLevel(EPerformanceLevel::Medium);
-		PerfManager->SetAutoOptimizationEnabled(true);
-		
-		UE_LOG(LogProjectVisible, Log, TEXT("Performance Monitoring Manager initialized - Auto-optimization: %s"), 
-			   PerfManager->IsAutoOptimizationEnabled() ? TEXT("Enabled") : TEXT("Disabled"));
-	}
-	else
-	{
-		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Performance Monitoring Manager"));
-	}
+	// Initialize Performance Monitoring Manager - DISABLED TO PREVENT CRASH
+	// if (UPerformanceMonitoringManager* PerfManager = GetPerformanceMonitoringManager())
+	// {
+	// 	PerfManager->StartPerformanceMonitoring();
+	// 	
+	// 	// Register for performance events
+	// 	PerfManager->OnPerformanceAlert.AddDynamic(this, &AGemini_CGameMode::OnPerformanceAlert);
+	// 	PerfManager->OnPerformanceMetricsUpdated.AddDynamic(this, &AGemini_CGameMode::OnPerformanceMetricsUpdated);
+	// 	PerfManager->OnQualityLevelChanged.AddDynamic(this, &AGemini_CGameMode::OnQualityLevelChanged);
+	// 	
+	// 	// Set initial performance level
+	// 	PerfManager->SetPerformanceLevel(EPerformanceLevel::Medium);
+	// 	PerfManager->SetAutoOptimizationEnabled(true);
+	// 	
+	// 	UE_LOG(LogProjectVisible, Log, TEXT("Performance Monitoring Manager initialized - Auto-optimization: %s"), 
+	// 		   PerfManager->IsAutoOptimizationEnabled() ? TEXT("Enabled") : TEXT("Disabled"));
+	// }
+	// else
+	// {
+	// 	UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Performance Monitoring Manager"));
+	// }
 	
 	// Initialize UI Polish Manager
 	if (UUIPolishManager* UIPolishManager = GetUIPolishManager())
@@ -538,6 +536,7 @@ UGameProgressionManager* AGemini_CGameMode::GetGameProgressionManager() const
 	return nullptr;
 }
 
+/*
 UAudioSystemManager* AGemini_CGameMode::GetAudioSystemManager() const
 {
 	if (UWorld* World = GetWorld())
@@ -549,6 +548,7 @@ UAudioSystemManager* AGemini_CGameMode::GetAudioSystemManager() const
 	}
 	return nullptr;
 }
+*/
 
 UPerformanceMonitoringManager* AGemini_CGameMode::GetPerformanceMonitoringManager() const
 {
@@ -1256,6 +1256,7 @@ void AGemini_CGameMode::OnProgressUpdated(EProgressTrackingType Type, float NewP
 	}
 }
 
+/*
 void AGemini_CGameMode::OnMusicTrackChanged(const FMusicTrack& NewTrack, const FMusicTrack& OldTrack)
 {
 	UE_LOG(LogProjectVisible, Log, TEXT("Music track changed: %s -> %s (Mood: %s)"), 
@@ -1279,7 +1280,9 @@ void AGemini_CGameMode::OnMusicTrackChanged(const FMusicTrack& NewTrack, const F
 		);
 	}
 }
+*/
 
+/*
 void AGemini_CGameMode::OnAudioMoodChanged(EAudioMood OldMood, EAudioMood NewMood)
 {
 	UE_LOG(LogProjectVisible, Log, TEXT("Audio mood changed: %s -> %s"), 
@@ -1306,11 +1309,11 @@ void AGemini_CGameMode::OnAudioMoodChanged(EAudioMood OldMood, EAudioMood NewMoo
 		}
 	}
 	
-	// Update UI theme based on mood
-	if (UProjectVisibleUIManager* UIManager = GetUIManager())
-	{
-		UIManager->UpdateInvestigationDisplayData();
-	}
+	// Update UI theme based on mood - TEMPORARILY DISABLED TO PREVENT CRASHES
+	// if (UProjectVisibleUIManager* UIManager = GetUIManager())
+	// {
+	//	UIManager->UpdateInvestigationDisplayData();
+	// }
 	
 	// Record mood analytics
 	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
@@ -1364,7 +1367,9 @@ void AGemini_CGameMode::OnSoundEffectTriggered(const FSoundEffect& Effect)
 			break;
 	}
 }
+*/
 
+/*
 void AGemini_CGameMode::OnPerformanceAlert(const FPerformanceAlert& Alert)
 {
 	UE_LOG(LogProjectVisible, Warning, TEXT("Performance Alert: %s - %s (Severity: %.1f)"), 
@@ -1741,6 +1746,7 @@ void AGemini_CGameMode::ProcessBoundaryEffects(float DeltaTime)
 		}
 	}
 }
+*/
 
 void AGemini_CGameMode::HandleSystemIntegration()
 {
@@ -1751,4 +1757,47 @@ void AGemini_CGameMode::HandleSystemIntegration()
 	// - Virtue System
 	// - Memory System
 	// - Boundary Dissolution Manager
+}
+
+// Stub implementations for missing UFUNCTION delegates
+void AGemini_CGameMode::OnPerformanceMetricsUpdated(const FPerformanceMetrics& OldMetrics, const FPerformanceMetrics& NewMetrics)
+{
+	// Stub implementation
+	UE_LOG(LogProjectVisible, Log, TEXT("Performance metrics updated (stub)"));
+}
+
+void AGemini_CGameMode::OnQualityLevelChanged(EPerformanceLevel OldLevel, EPerformanceLevel NewLevel)
+{
+	// Stub implementation  
+	UE_LOG(LogProjectVisible, Log, TEXT("Quality level changed (stub)"));
+}
+
+void AGemini_CGameMode::OnUIAnimationCompleted(UWidget* Widget, EUIVisualEffect Effect)
+{
+	// Stub implementation
+	UE_LOG(LogProjectVisible, Log, TEXT("UI animation completed (stub)"));
+}
+
+void AGemini_CGameMode::OnUIEffectTriggered(UWidget* Widget, const FUIVisualEffectConfig& Config)
+{
+	// Stub implementation
+	UE_LOG(LogProjectVisible, Log, TEXT("UI effect triggered (stub)"));
+}
+
+void AGemini_CGameMode::OnUIInteractionStateChanged(UWidget* Widget, EUIInteractionState State)
+{
+	// Stub implementation
+	UE_LOG(LogProjectVisible, Log, TEXT("UI interaction state changed (stub)"));
+}
+
+void AGemini_CGameMode::OnPerformanceAlert(const FPerformanceAlert& Alert)
+{
+	// Stub implementation
+	UE_LOG(LogProjectVisible, Warning, TEXT("Performance alert (stub): %s"), *Alert.Description);
+}
+
+void AGemini_CGameMode::UpdateGamePhase()
+{
+	// Stub implementation
+	UE_LOG(LogProjectVisible, Log, TEXT("Game phase updated (stub)"));
 }

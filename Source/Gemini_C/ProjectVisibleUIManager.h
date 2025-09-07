@@ -161,6 +161,16 @@ public:
     UFUNCTION(BlueprintCallable, Category = "UI Data")
     void UpdateInvestigationDisplayData();
 
+    // Modal management helpers
+    UFUNCTION(BlueprintCallable, Category = "Project Visible UI")
+    void AddTestModal(UUserWidget* Widget);
+
+    UFUNCTION(BlueprintCallable, Category = "Project Visible UI")
+    void ClearAllModals();
+
+    UFUNCTION(BlueprintCallable, Category = "Project Visible UI")
+    bool HasActiveModals() const;
+
     // Events
     UPROPERTY(BlueprintAssignable, Category = "UI Events")
     FOnScreenChanged OnScreenChanged;
@@ -240,6 +250,7 @@ private:
     // Helper Functions
     void InitializeDefaultThemes();
     void InitializeDefaultScreenClasses();
+    void RegisterDefaultWidgetClasses();
     void ApplyAccessibilitySettings();
     void UpdateResponsiveLayout();
     

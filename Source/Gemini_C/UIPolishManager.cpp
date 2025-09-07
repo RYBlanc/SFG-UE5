@@ -462,10 +462,10 @@ void UUIPolishManager::TriggerHapticFeedback(EUIHapticType HapticType)
 
 void UUIPolishManager::PlayUISound(const FString& SoundID)
 {
-    if (UAudioSystemManager* AudioManager = GetAudioManager())
-    {
-        AudioManager->PlaySoundEffect(SoundID);
-    }
+    // if (UAudioSystemManager* AudioManager = GetAudioManager()) // Temporarily disabled
+    // {
+    //     AudioManager->PlaySoundEffect(SoundID);
+    // }
 }
 
 // Responsive Design
@@ -776,6 +776,7 @@ void UUIPolishManager::OnPerformanceLevelChanged(EPerformanceLevel PerformanceLe
            *UEnum::GetValueAsString(PerformanceLevel));
 }
 
+#if 0 // Temporarily disabled - EAudioMood undefined
 void UUIPolishManager::OnAudioMoodChanged(EAudioMood AudioMood)
 {
     // Adjust UI visual mood based on audio mood
@@ -808,6 +809,7 @@ void UUIPolishManager::OnAudioMoodChanged(EAudioMood AudioMood)
     UE_LOG(LogUIPolish, Log, TEXT("Adjusted UI mood for audio mood: %s"), 
            *UEnum::GetValueAsString(AudioMood));
 }
+#endif // Temporarily disabled - EAudioMood undefined
 
 void UUIPolishManager::OnStoryPhaseChanged(EStoryPhase StoryPhase)
 {
@@ -1167,6 +1169,7 @@ UPerformanceMonitoringManager* UUIPolishManager::GetPerformanceManager()
     return nullptr;
 }
 
+/*
 UAudioSystemManager* UUIPolishManager::GetAudioManager()
 {
     if (UWorld* World = GetWorld())
@@ -1178,6 +1181,7 @@ UAudioSystemManager* UUIPolishManager::GetAudioManager()
     }
     return nullptr;
 }
+*/
 
 UStoryManager* UUIPolishManager::GetStoryManager()
 {

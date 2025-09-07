@@ -1,5 +1,8 @@
 // Project Visible - Audio System Manager Implementation
 // Copyright Epic Games, Inc. All Rights Reserved.
+// TEMPORARILY DISABLED - Using ProjectVisibleAudioManager instead
+
+#if 0 // Disable this entire file temporarily
 
 #include "AudioSystemManager.h"
 #include "Gemini_C.h"
@@ -1117,3 +1120,5 @@ UVirtueManager* UAudioSystemManager::GetVirtueManager() { return nullptr; }
 UMemoryManager* UAudioSystemManager::GetMemoryManager() { return nullptr; }
 UGameProgressionManager* UAudioSystemManager::GetProgressionManager() { return nullptr; }
 UBoundaryDissolutionManager* UAudioSystemManager::GetBoundaryManager() { return nullptr; }
+
+#endif // Temporarily disabled
