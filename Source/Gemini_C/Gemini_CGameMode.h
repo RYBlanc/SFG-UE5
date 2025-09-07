@@ -12,6 +12,7 @@
 #include "GameProgressionTypes.h"
 #include "AudioSystemTypes.h"
 #include "PerformanceMonitoringTypes.h"
+#include "UIPolishTypes.h"
 #include "Gemini_CGameMode.generated.h"
 
 class ULandscapeOfMindManager;
@@ -27,6 +28,7 @@ class UCharacterManager;
 class UGameProgressionManager;
 class UAudioSystemManager;
 class UPerformanceMonitoringManager;
+class UUIPolishManager;
 
 /**
  * Project Visible Game Mode - Manages the dual reality/dream world system
@@ -97,6 +99,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
 	UPerformanceMonitoringManager* GetPerformanceMonitoringManager() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
+	UUIPolishManager* GetUIPolishManager() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Project Visible", BlueprintPure)
 	ELandscapePhase GetCurrentGamePhase() const { return CurrentGamePhase; }
@@ -188,6 +193,15 @@ public:
 
 	UFUNCTION()
 	void OnQualityLevelChanged(EPerformanceLevel OldLevel, EPerformanceLevel NewLevel);
+
+	UFUNCTION()
+	void OnUIAnimationCompleted(UWidget* Widget, EUIVisualEffect EffectType);
+
+	UFUNCTION()
+	void OnUIEffectTriggered(UWidget* Widget, const FUIVisualEffectConfig& EffectConfig);
+
+	UFUNCTION()
+	void OnUIInteractionStateChanged(UWidget* Widget, EUIInteractionState NewState);
 
 protected:
 	// Game State

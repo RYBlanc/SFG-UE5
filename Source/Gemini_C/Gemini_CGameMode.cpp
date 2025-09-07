@@ -17,6 +17,7 @@
 #include "GameProgressionManager.h"
 #include "AudioSystemManager.h"
 #include "PerformanceMonitoringManager.h"
+#include "UIPolishManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -323,6 +324,28 @@ void AGemini_CGameMode::InitializeProjectVisible()
 	{
 		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get Performance Monitoring Manager"));
 	}
+	
+	// Initialize UI Polish Manager
+	if (UUIPolishManager* UIPolishManager = GetUIPolishManager())
+	{
+		UIPolishManager->InitializeUIPolishSystem();
+		
+		// Register for UI polish events
+		UIPolishManager->OnUIAnimationCompleted.AddDynamic(this, &AGemini_CGameMode::OnUIAnimationCompleted);
+		UIPolishManager->OnUIEffectTriggered.AddDynamic(this, &AGemini_CGameMode::OnUIEffectTriggered);
+		UIPolishManager->OnUIInteractionStateChanged.AddDynamic(this, &AGemini_CGameMode::OnUIInteractionStateChanged);
+		
+		// Set initial UI polish level
+		UIPolishManager->SetUIPolishLevel(EUIPolishLevel::Standard);
+		UIPolishManager->ApplyTheme(EUITheme::Default);
+		
+		UE_LOG(LogProjectVisible, Log, TEXT("UI Polish Manager initialized - Polish level: %s"), 
+			   *UEnum::GetValueAsString(UIPolishManager->GetUIPolishLevel()));
+	}
+	else
+	{
+		UE_LOG(LogProjectVisible, Error, TEXT("Failed to get UI Polish Manager"));
+	}
 
 	UE_LOG(LogProjectVisible, Log, TEXT("Project Visible systems initialized - All systems operational"));
 }
@@ -534,6 +557,18 @@ UPerformanceMonitoringManager* AGemini_CGameMode::GetPerformanceMonitoringManage
 		if (UGameInstance* GameInstance = World->GetGameInstance())
 		{
 			return GameInstance->GetSubsystem<UPerformanceMonitoringManager>();
+		}
+	}
+	return nullptr;
+}
+
+UUIPolishManager* AGemini_CGameMode::GetUIPolishManager() const
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GameInstance = World->GetGameInstance())
+		{
+			return GameInstance->GetSubsystem<UUIPolishManager>();
 		}
 	}
 	return nullptr;
@@ -1486,6 +1521,170 @@ void AGemini_CGameMode::OnQualityLevelChanged(EPerformanceLevel OldLevel, EPerfo
 			TEXT("Quality Level Changed"),
 			FString::Printf(TEXT("%s->%s"), *UEnum::GetValueAsString(OldLevel), *UEnum::GetValueAsString(NewLevel)),
 			static_cast<float>(static_cast<uint8>(NewLevel)) / 5.0f
+		);
+	}
+}
+
+void AGemini_CGameMode::OnUIAnimationCompleted(UWidget* Widget, EUIVisualEffect EffectType)
+{
+	UE_LOG(LogProjectVisible, VeryVerbose, TEXT("UI Animation completed: %s on widget %s"), 
+		   *UEnum::GetValueAsString(EffectType), Widget ? *Widget->GetName() : TEXT("NULL"));
+	
+	// Handle animation completion based on effect type
+	switch (EffectType)
+	{
+		case EUIVisualEffect::FadeIn:
+			// Animation fade in completed - could trigger next UI sequence
+			break;
+		case EUIVisualEffect::ScaleUp:
+			// Scale animation completed - could trigger haptic feedback
+			if (UUIPolishManager* UIPolishManager = GetUIPolishManager())
+			{
+				UIPolishManager->TriggerHapticFeedback(EUIHapticType::Success);
+			}
+			break;
+		case EUIVisualEffect::Glow:
+			// Glow effect completed - could indicate selection confirmation
+			if (UVirtueManager* VirtueManager = GetVirtueManager())
+			{
+				VirtueManager->UpdateVirtueLevel(EVirtueType::Wisdom, 0.5f, TEXT("UI操作の熟練度向上"));
+			}
+			break;
+	}
+	
+	// Record UI interaction analytics
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("UI Animation Completed"),
+			FString::Printf(TEXT("%s_%s"), *UEnum::GetValueAsString(EffectType), Widget ? *Widget->GetName() : TEXT("NULL")),
+			1.0f
+		);
+	}
+}
+
+void AGemini_CGameMode::OnUIEffectTriggered(UWidget* Widget, const FUIVisualEffectConfig& EffectConfig)
+{
+	UE_LOG(LogProjectVisible, VeryVerbose, TEXT("UI Effect triggered: %s on widget %s (Intensity: %.2f)"), 
+		   *UEnum::GetValueAsString(EffectConfig.EffectType), 
+		   Widget ? *Widget->GetName() : TEXT("NULL"), 
+		   EffectConfig.Intensity);
+	
+	// Adjust game atmosphere based on UI effects
+	if (EffectConfig.EffectType == EUIVisualEffect::Pulse || EffectConfig.EffectType == EUIVisualEffect::Glow)
+	{
+		// Enhance visual effects during UI polish moments
+		if (UBoundaryDissolutionManager* BoundaryManager = GetBoundaryDissolutionManager())
+		{
+			// Enhanced visual effects during UI polish moments
+			BoundaryManager->SetDissolutionIntensity(0.3f);
+		}
+	}
+	
+	// Create memory of satisfying UI interaction
+	if (EffectConfig.Intensity > 0.8f)
+	{
+		if (UMemoryManager* MemoryManager = GetMemoryManager())
+		{
+			MemoryManager->CreateMemory(
+				FString::Printf(TEXT("美しいUI効果: %s"), *UEnum::GetValueAsString(EffectConfig.EffectType)),
+				TEXT("印象的な視覚効果を体験した"),
+				EMemoryType::Episodic,
+				EMemoryImportance::Low,
+				EffectConfig.Intensity * 20.0f
+			);
+		}
+	}
+	
+	// Adjust audio based on visual effects
+	if (UAudioSystemManager* AudioManager = GetAudioSystemManager())
+	{
+		// Simplified audio mood adjustment based on effect type
+		if (EffectConfig.EffectType == EUIVisualEffect::Glow)
+		{
+			AudioManager->SetAudioMood(EAudioMood::Ethereal);
+		}
+		else if (EffectConfig.EffectType == EUIVisualEffect::Shake)
+		{
+			AudioManager->SetAudioMood(EAudioMood::Chaotic);
+		}
+		else
+		{
+			AudioManager->SetAudioMood(EAudioMood::Contemplative);
+		}
+	}
+}
+
+void AGemini_CGameMode::OnUIInteractionStateChanged(UWidget* Widget, EUIInteractionState NewState)
+{
+	UE_LOG(LogProjectVisible, VeryVerbose, TEXT("UI Interaction state changed: %s on widget %s"), 
+		   *UEnum::GetValueAsString(NewState), Widget ? *Widget->GetName() : TEXT("NULL"));
+	
+	// Award virtue for thoughtful UI interaction
+	if (NewState == EUIInteractionState::Selected || NewState == EUIInteractionState::Focused)
+	{
+		if (UVirtueManager* VirtueManager = GetVirtueManager())
+		{
+			VirtueManager->UpdateVirtueLevel(EVirtueType::Temperance, 0.2f, TEXT("集中したUI操作"));
+		}
+	}
+	
+	// Adjust game mood based on UI interaction patterns
+	switch (NewState)
+	{
+		case EUIInteractionState::Hovered:
+			// Player is exploring UI - encourage curiosity
+			if (UVirtueManager* VirtueManager = GetVirtueManager())
+			{
+				VirtueManager->UpdateVirtueLevel(EVirtueType::Wisdom, 0.1f, TEXT("UI探索"));
+			}
+			break;
+			
+		case EUIInteractionState::Pressed:
+			// Player made a decision - record interaction speed
+			if (UUIPolishManager* UIPolishManager = GetUIPolishManager())
+			{
+				UIPolishManager->RecordUIInteraction(Widget, TEXT("Press"));
+			}
+			break;
+			
+		case EUIInteractionState::Error:
+			// UI error state - adjust audio mood
+			if (UAudioSystemManager* AudioManager = GetAudioSystemManager())
+			{
+				AudioManager->SetAudioMood(EAudioMood::Tense);
+				AudioManager->PlaySoundEffect(TEXT("UI_ERROR"));
+			}
+			break;
+			
+		case EUIInteractionState::Success:
+			// Success state - positive reinforcement
+			if (UAudioSystemManager* AudioManager = GetAudioSystemManager())
+			{
+				AudioManager->SetAudioMood(EAudioMood::Hopeful);
+				AudioManager->PlaySoundEffect(TEXT("UI_SUCCESS"));
+			}
+			
+			if (UVirtueManager* VirtueManager = GetVirtueManager())
+			{
+				VirtueManager->UpdateVirtueLevel(EVirtueType::Justice, 0.3f, TEXT("正しい選択"));
+			}
+			break;
+	}
+	
+	// Record interaction state analytics
+	if (USocialExperimentManager* ExperimentManager = GetSocialExperimentManager())
+	{
+		ExperimentManager->RecordBehavioralData(
+			1, // Default experiment ID
+			TEXT("CURRENT_PLAYER"),
+			TEXT("UI Interaction State"),
+			FString::Printf(TEXT("%s_%s"), 
+				Widget ? *Widget->GetName() : TEXT("NULL"), 
+				*UEnum::GetValueAsString(NewState)),
+			static_cast<float>(static_cast<uint8>(NewState)) / 10.0f
 		);
 	}
 }
